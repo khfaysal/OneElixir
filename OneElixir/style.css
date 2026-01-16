@@ -1,0 +1,14 @@
+.navbar {
+  height: 60px;
+  width: 100%;
+  background-color: #333;
+  display: flex;
+  justify-content: space-between;
+  border: 3px solid red;
+}
+
+.navbar .logo {
+  height: 50px;
+  width: 50px;
+  border: 2px solid blue;
+}
