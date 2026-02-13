@@ -1,97 +1,86 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useCart } from '../context/CartContext';
 import { Link } from 'react-router-dom';
+import BannerManagement from './BannerManagement'; 
 
 const Home = () => {
   const [perfumes, setPerfumes] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [banners, setBanners] = useState([]); 
+  const { addToCart } = useCart();
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     const fetchPerfumes = async () => {
       try {
-        // Calling your actual Node.js server
-        const res = await axios.get('http://localhost:5000/api/perfumes');
+        const res = await axios.get(`${API_URL}/api/perfumes`);
         setPerfumes(res.data);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching OneElixir collection:", err);
-        setLoading(false);
-      }
+      } catch (err) { console.error(err); }
+    };
+
+    const fetchBanners = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/banners`);
+        setBanners(res.data);
+      } catch (err) { console.error("Banner fetch failed", err); }
     };
 
     fetchPerfumes();
-  }, []);
-
-  if (loading) return <div style={loaderStyle}>Elevating your senses...</div>;
+    fetchBanners(); 
+  }, [API_URL]);
 
   return (
-    <div style={{ padding: '20px' }}>
-      <header style={headerStyle}>
-        <h2 style={{ letterSpacing: '5px' }}>THE COLLECTION</h2>
-        <p>Curated scents for the modern soul.</p>
-      </header>
+    <div>
+      {/* 1. RENDER THE BANNER AT THE TOP */}
+      <BannerManagement />
 
-      <div className="product-grid">
-        {perfumes.length > 0 ? (
-          perfumes.map((p) => (
-            <div key={p._id} className="card">
-              <Link to={`/product/${p._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div style={imageWrapper}>
-                  <img src={p.image} alt={p.name} style={imageStyle} />
-                </div>
-                <h3 style={productTitle}>{p.name}</h3>
-                <p style={productPrice}>${p.price}</p>
+      <div style={{ padding: '50px 10%' }}>
+        <h2 style={{ textAlign: 'center', letterSpacing: '5px', marginBottom: '40px' }}>THE COLLECTION</h2>
+        <div style={gridStyle}>
+          {perfumes.map((p) => (
+            <div key={p._id} style={cardStyle}>
+              {p.stock === 0 && <div style={badgeStyle}>SOLD OUT</div>}
+              
+              <Link to={`/product/${p._id}`}>
+                <img src={p.image} alt={p.name} style={{ 
+                  width: '100%', 
+                  height: '350px', 
+                  objectFit: 'cover',
+                  opacity: p.stock === 0 ? 0.5 : 1 
+                }} />
               </Link>
+
+              <div style={{ padding: '15px', textAlign: 'center' }}>
+                <h4 style={{ margin: '10px 0' }}>{p.name}</h4>
+                <p style={{ fontWeight: 'bold' }}>TK {p.price}</p>
+                <button 
+                  // FIX: Explicitly pass price as a Number to prevent NaN in cart
+                  onClick={() => addToCart({
+                    ...p,
+                    price: Number(p.price) 
+                  })} 
+                  disabled={p.stock === 0}
+                  style={{ 
+                    ...btnStyle, 
+                    backgroundColor: p.stock === 0 ? '#ccc' : '#000',
+                    cursor: p.stock === 0 ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {p.stock === 0 ? 'UNAVAILABLE' : 'ADD TO CART'}
+                </button>
+              </div>
             </div>
-          ))
-        ) : (
-          <p style={{ textAlign: 'center', gridColumn: '1/-1' }}>
-            No elixirs found. Add some from the Admin panel!
-          </p>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-// Internal Styles for Home Page
-const headerStyle = {
-  textAlign: 'center',
-  margin: '40px 0',
-  textTransform: 'uppercase'
-};
-
-const imageWrapper = {
-  overflow: 'hidden',
-  backgroundColor: '#f9f9f9',
-  marginBottom: '15px'
-};
-
-const imageStyle = {
-  width: '100%',
-  height: '400px',
-  objectFit: 'cover',
-  transition: 'transform 0.5s ease'
-};
-
-const productTitle = {
-  fontSize: '18px',
-  fontWeight: '600',
-  marginBottom: '5px'
-};
-
-const productPrice = {
-  color: '#666',
-  fontSize: '16px'
-};
-
-const loaderStyle = {
-  height: '80vh',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  fontSize: '1.2rem',
-  letterSpacing: '2px'
-};
+// --- Styles maintained from your file ---
+const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '30px' };
+const cardStyle = { border: '1px solid #eee', position: 'relative', overflow: 'hidden' };
+const btnStyle = { width: '100%', color: '#fff', padding: '12px', border: 'none', marginTop: '10px', fontWeight: 'bold' };
+const badgeStyle = { position: 'absolute', top: '15px', left: '15px', backgroundColor: '#ff4444', color: '#fff', padding: '5px 12px', fontSize: '11px', fontWeight: 'bold', letterSpacing: '1px', zIndex: 2 };
 
 export default Home;
